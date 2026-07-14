@@ -1,0 +1,23 @@
+[project]
+name = "wealthreader_hub"
+authors = [
+    { name = "ADMBit Technologies", email = "info@admbit.com" }
+]
+description = "Centralized management and billing hub for Wealthreader ERPNext integrations"
+readme = "README.md"
+requires-python = ">=3.10"
+dynamic = ["version"]
+dependencies = []
+
+[build-system]
+requires = ["flit_core >=3.4,<4"]
+build-backend = "flit_core.buildapi"
+
+[tool.flit.module]
+name = "wealthreader_hub"
+
+[tool.bench.frappe-dependencies]
+frappe = ">=16.0.0,<17.0.0"
+
+[tool.frappe.testing.function_type_validation]
+disabled = true
