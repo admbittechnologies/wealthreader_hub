@@ -1,0 +1,89 @@
+{
+ "charts": [],
+ "content": "[{\"id\": \"wrh-header-1\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Wealthreader Hub</b></span>\", \"col\": 12}}, {\"id\": \"wrh-shortcut-1\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Configuration\", \"col\": 4}}, {\"id\": \"wrh-shortcut-2\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Customers\", \"col\": 4}}, {\"id\": \"wrh-shortcut-3\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Usage Reports\", \"col\": 4}}, {\"id\": \"wrh-card-1\", \"type\": \"card\", \"data\": {\"card_name\": \"Hub\", \"col\": 12}}]",
+ "creation": "2026-07-09 16:00:00.000000",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "key",
+ "idx": 0,
+ "is_hidden": 0,
+ "label": "Wealthreader Hub",
+ "links": [
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Hub",
+   "link_count": 0,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Wealthreader Configuration",
+   "link_to": "Wealthreader Configuration",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Wealthreader Customer",
+   "link_to": "Wealthreader Customer",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Wealthreader Usage Report",
+   "link_to": "Wealthreader Usage Report",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-07-09 16:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Wealthreader Hub",
+ "name": "Wealthreader Hub",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [],
+ "sequence_id": 99.0,
+ "shortcuts": [
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "label": "Configuration",
+   "link_to": "Wealthreader Configuration",
+   "type": "DocType"
+  },
+  {
+   "color": "Green",
+   "doc_view": "List",
+   "label": "Customers",
+   "link_to": "Wealthreader Customer",
+   "type": "DocType"
+  },
+  {
+   "color": "Orange",
+   "doc_view": "List",
+   "label": "Usage Reports",
+   "link_to": "Wealthreader Usage Report",
+   "type": "DocType"
+  }
+ ],
+ "title": "Wealthreader Hub"
+}

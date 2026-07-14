@@ -11,6 +11,13 @@ required_apps = ["frappe"]
 
 after_install = "wealthreader_hub.setup.install.after_install"
 
+fixtures = [
+	{
+		"doctype": "Workspace",
+		"filters": [["name", "=", "Wealthreader Hub"]],
+	}
+]
+
 scheduler_events = {
     "daily": [
         "wealthreader_hub.wealthreader_hub.doctype.wealthreader_customer.wealthreader_customer.send_expiry_reminders"
