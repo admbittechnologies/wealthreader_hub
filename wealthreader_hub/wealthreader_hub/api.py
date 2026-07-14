@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import frappe
+import requests
 from frappe import _
 from frappe.utils import cint, formatdate, getdate, today
 
@@ -126,6 +127,68 @@ def revoke():
 	customer.status = "Inactive"
 	customer.save()
 	return {"status": "ok"}
+
+
+@frappe.whitelist(methods=["POST"], allow_guest=True)
+def register_domain():
+	"""Register a client site's domain and callback URL with Wealthreader.
+
+	This lets ADMBit keep the shared Wealthreader API key in the Hub while
+	client sites are provisioned automatically.
+	"""
+	data = frappe.parse_json(frappe.request.get_data(as_text=True) or "{}")
+	activation_key = data.get("activation_key")
+	site_url = data.get("site_url")
+	callback_url = data.get("callback_url")
+
+	if not activation_key:
+		return _error("activation_key is required")
+
+	customer = frappe.get_doc("Wealthreader Customer", {"activation_key": activation_key})
+	if not customer:
+		return _error("Invalid activation key")
+
+	if customer.status != "Active":
+		return _error(f"Customer account is {customer.status}")
+
+	config = get_hub_config()
+	api_key = config.get_password("api_key")
+	if not api_key:
+		return _error("Wealthreader API key is not configured in the hub")
+
+	domain = (site_url or callback_url or customer.site_url or "").rstrip("/")
+	if not domain:
+		return _error("site_url or callback_url is required")
+
+	wealthreader_url = "https://api.wealthreader.com/domains/"
+	if config.environment == "sandbox":
+		wealthreader_url = "https://sandbox.wealthreader.com/domains/"
+
+	payload = {
+		"method": "add",
+		"api_key": api_key,
+		"domain": domain,
+		"access_type": "iframe",
+	}
+	if callback_url:
+		payload["callback_url"] = callback_url
+
+	try:
+		response = requests.post(wealthreader_url, data=payload, timeout=30)
+		response.raise_for_status()
+		try:
+			result = response.json()
+		except ValueError:
+			result = {"body": response.text}
+		return {"status": "ok", "data": result}
+	except requests.exceptions.HTTPError as e:
+		message = f"Wealthreader domain registration failed: {e.response.status_code} - {e.response.text[:500]}"
+		frappe.log_error(message, _("Wealthreader Domain Registration"))
+		return _error(message)
+	except requests.exceptions.RequestException as e:
+		message = f"Wealthreader domain registration request error: {str(e)}"
+		frappe.log_error(message, _("Wealthreader Domain Registration"))
+		return _error(message)
 
 
 def _error(message):
