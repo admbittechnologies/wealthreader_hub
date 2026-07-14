@@ -1,6 +1,6 @@
 # Wealthreader Hub
 
-Centralized management and billing hub for the `frappe_wealthreader` client app.
+Centralized management and billing hub for the `QuickBanks client app` client app.
 
 ## What it does
 
@@ -78,7 +78,7 @@ Deactivates a customer.
 ## Installation
 
 ```bash
-bench get-app https://github.com/admbittechnologies/frappe_wealthreader_hub.git
+bench get-app https://github.com/admbittechnologies/QuickBanks client app_hub.git
 bench --site <hub-site> install-app wealthreader_hub
 ```
 
