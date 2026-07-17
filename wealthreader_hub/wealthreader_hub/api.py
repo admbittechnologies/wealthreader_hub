@@ -3,6 +3,7 @@
 
 import frappe
 import requests
+from functools import wraps
 from frappe import _
 from frappe.utils import cint, formatdate, getdate, today
 
@@ -14,7 +15,23 @@ from wealthreader_hub.wealthreader_hub.utils import (
 )
 
 
+def _as_admin(fn):
+	"""Run an allow_guest endpoint as Administrator so DocType permissions are satisfied."""
+
+	@wraps(fn)
+	def wrapper(*args, **kwargs):
+		original_user = frappe.session.user
+		frappe.set_user("Administrator")
+		try:
+			return fn(*args, **kwargs)
+		finally:
+			frappe.set_user(original_user)
+
+	return wrapper
+
+
 @frappe.whitelist(methods=["POST"], allow_guest=True)
+@_as_admin
 def activate():
 	"""Client site calls this with an activation key to receive its configuration."""
 	data = frappe.parse_json(frappe.request.get_data(as_text=True) or "{}")
@@ -63,6 +80,7 @@ def activate():
 
 
 @frappe.whitelist(methods=["POST"], allow_guest=True)
+@_as_admin
 def report_usage():
 	"""Receive a signed daily usage report from a client site."""
 	data = frappe.parse_json(frappe.request.get_data(as_text=True) or "{}")
@@ -130,6 +148,7 @@ def revoke():
 
 
 @frappe.whitelist(methods=["POST"], allow_guest=True)
+@_as_admin
 def register_domain():
 	"""Register a client site's domain and callback URL with Wealthreader.
 
