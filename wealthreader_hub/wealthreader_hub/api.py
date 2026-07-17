@@ -187,7 +187,7 @@ def register_domain():
 		"method": "add",
 		"api_key": api_key,
 		"domain": domain,
-		"access_type": "iframe",
+		"access_type": "widget",
 	}
 	if callback_url:
 		payload["callback_url"] = callback_url
