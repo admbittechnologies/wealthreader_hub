@@ -210,6 +210,56 @@ def register_domain():
 		return _error(message)
 
 
+@frappe.whitelist(methods=["POST"], allow_guest=True)
+@_as_admin
+def callback():
+	"""Relay a Wealthreader callback to the client site that owns the operation.
+
+	When the widget is hosted on the Hub domain, Wealthreader delivers the
+	callback here. We look up the client callback URL that was registered for
+	this operation_id and forward the raw payload unchanged.
+	"""
+	try:
+		data = frappe.parse_json(frappe.request.get_data(as_text=True) or "{}")
+	except Exception:
+		frappe.log_error("Wealthreader Hub callback body could not be parsed")
+		return _ok()
+
+	if not isinstance(data, dict):
+		frappe.log_error("Wealthreader Hub callback body is not a JSON object")
+		return _ok()
+
+	operation_id = data.get("operation_id") or data.get("operationId")
+	if not operation_id and isinstance(data.get("payload"), dict):
+		operation_id = data["payload"].get("operation_id") or data["payload"].get("operationId")
+
+	if not operation_id:
+		frappe.log_error("Wealthreader Hub callback missing operation_id")
+		return _ok()
+
+	cache_key = f"wr_callback_{operation_id}"
+	client_callback_url = frappe.cache.get_value(cache_key)
+	if not client_callback_url:
+		frappe.log_error(f"Wealthreader Hub callback: no client URL for operation_id {operation_id}")
+		return _ok()
+
+	try:
+		requests.post(client_callback_url, json=data, timeout=30)
+	except Exception as e:
+		frappe.log_error(f"Wealthreader Hub callback relay failed: {str(e)}")
+
+	# Best-effort cleanup so the cache does not grow indefinitely.
+	frappe.cache.delete_value(cache_key)
+	return _ok()
+
+
+def _ok():
+	# Wealthreader expects an HTTP 200 acknowledgement regardless of our
+	# internal outcome; errors are logged locally.
+	frappe.response["http_status_code"] = 200
+	return {"status": "ok"}
+
+
 def _error(message):
 	frappe.response["http_status_code"] = 400
 	return {"status": "error", "message": message}
