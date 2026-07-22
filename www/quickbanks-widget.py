@@ -18,6 +18,13 @@ def get_context(context):
 	callback_url = frappe.form_dict.get("callback_url")
 	parent_origin = frappe.form_dict.get("parent_origin")
 
+	# Allow the client site to embed this Hub-hosted widget in an iframe.
+	frappe.local.response.headers.pop("X-Frame-Options", None)
+	frame_ancestors = "'self'"
+	if parent_origin:
+		frame_ancestors += f" {parent_origin}"
+	frappe.local.response.headers["Content-Security-Policy"] = f"frame-ancestors {frame_ancestors}"
+
 	if not activation_key or not operation_id or not callback_url or not parent_origin:
 		context.error = _("Missing required parameters.")
 		return context
