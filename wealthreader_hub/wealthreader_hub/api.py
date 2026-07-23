@@ -1,11 +1,14 @@
 # Copyright (c) 2026, ADMBit Technologies and contributors
 # For license information, please see license.txt
 
+from urllib.parse import urlparse
+
 import frappe
 import requests
 from functools import wraps
 from frappe import _
 from frappe.utils import cint, formatdate, getdate, today
+from werkzeug.wrappers import Response
 
 from wealthreader_hub.wealthreader_hub.utils import (
 	get_hub_config,
@@ -251,6 +254,84 @@ def callback():
 	# Best-effort cleanup so the cache does not grow indefinitely.
 	frappe.cache.delete_value(cache_key)
 	return _ok()
+
+
+@frappe.whitelist(methods=["GET"], allow_guest=True)
+@_as_admin
+def widget():
+	"""Render the Wealthreader widget HTML to be loaded in a client iframe.
+
+	This endpoint bypasses Frappe's website router, so it works even when the
+	Hub site has website pages disabled for guests.
+	"""
+	activation_key = frappe.form_dict.get("activation_key")
+	operation_id = frappe.form_dict.get("operation_id")
+	product_types = frappe.form_dict.get("product_types") or "accounts,cards"
+	date_from = frappe.form_dict.get("date_from") or ""
+	callback_url = frappe.form_dict.get("callback_url")
+	parent_origin = frappe.form_dict.get("parent_origin")
+
+	error = None
+	if not activation_key or not operation_id or not callback_url or not parent_origin:
+		error = _("Missing required parameters.")
+
+	if not error:
+		customers = frappe.get_all(
+			"Wealthreader Customer",
+			filters={"activation_key": activation_key},
+			fields=["name", "status", "site_url"],
+			ignore_permissions=True,
+		)
+		if not customers:
+			error = _("Invalid activation key.")
+		else:
+			customer = customers[0]
+			if customer.status != "Active":
+				error = _("Customer account is not active.")
+			elif customer.site_url and customer.site_url.rstrip("/") != parent_origin.rstrip("/"):
+				error = _("Site URL does not match the registered customer.")
+			else:
+				if not customer.site_url:
+					frappe.db.set_value(
+						"Wealthreader Customer", customer.name, "site_url", parent_origin
+					)
+
+	if not error:
+		# Remember where to forward the Wealthreader callback for this operation.
+		frappe.cache.set_value(
+			f"wr_callback_{operation_id}", callback_url, expires_in_sec=7200
+		)
+
+	widget_domain = _host_from_url(frappe.utils.get_url())
+
+	context = {
+		"operation_id": operation_id,
+		"product_types": product_types,
+		"date_from": date_from,
+		"widget_domain": widget_domain,
+		"parent_origin": parent_origin,
+		"error": error,
+	}
+
+	template_path = frappe.get_app_path(
+		"wealthreader_hub", "www", "quickbanks-widget.html"
+	)
+	with open(template_path, encoding="utf-8") as f:
+		template_source = f.read()
+
+	html = frappe.render_template(template_source, context)
+
+	headers = {
+		"Content-Security-Policy": f"frame-ancestors 'self' {parent_origin}" if parent_origin else "frame-ancestors 'self'",
+	}
+	return Response(response=html, status=200, mimetype="text/html", headers=headers)
+
+
+def _host_from_url(url):
+	if not url:
+		return url
+	parsed = urlparse(url)
+	return parsed.netloc or url
 
 
 def _ok():
