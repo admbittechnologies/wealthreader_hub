@@ -19,44 +19,40 @@ def get_context(context):
 	parent_origin = frappe.form_dict.get("parent_origin")
 
 	# Allow the client site to embed this Hub-hosted widget in an iframe.
-	frappe.local.response.headers.pop("X-Frame-Options", None)
-	frame_ancestors = "'self'"
-	if parent_origin:
-		frame_ancestors += f" {parent_origin}"
-	frappe.local.response.headers["Content-Security-Policy"] = f"frame-ancestors {frame_ancestors}"
+	try:
+		response = getattr(frappe.local, "response", None) or frappe.response
+		headers = getattr(response, "headers", None)
+		if headers is not None:
+			headers.pop("X-Frame-Options", None)
+			frame_ancestors = "'self'"
+			if parent_origin:
+				frame_ancestors += f" {parent_origin}"
+			headers["Content-Security-Policy"] = f"frame-ancestors {frame_ancestors}"
+	except Exception:
+		pass
 
 	if not activation_key or not operation_id or not callback_url or not parent_origin:
 		context.error = _("Missing required parameters.")
 		return context
 
-	original_user = frappe.session.user
-	frappe.set_user("Administrator")
-	try:
-		customers = frappe.get_all(
-			"Wealthreader Customer",
-			filters={"activation_key": activation_key},
-			fields=["name", "status", "site_url"],
-			ignore_permissions=True,
-		)
-		if not customers:
-			context.error = _("Invalid activation key.")
-			return context
+	customers = frappe.get_all(
+		"Wealthreader Customer",
+		filters={"activation_key": activation_key},
+		fields=["name", "status", "site_url"],
+		ignore_permissions=True,
+	)
+	if not customers:
+		context.error = _("Invalid activation key.")
+		return context
 
-		customer = customers[0]
-		if customer.status != "Active":
-			context.error = _("Customer account is not active.")
-			return context
+	customer = customers[0]
+	if customer.status != "Active":
+		context.error = _("Customer account is not active.")
+		return context
 
-		if customer.site_url and customer.site_url.rstrip("/") != parent_origin.rstrip("/"):
-			context.error = _("Site URL does not match the registered customer.")
-			return context
-
-		if not customer.site_url:
-			frappe.db.set_value(
-				"Wealthreader Customer", customer.name, "site_url", parent_origin
-			)
-	finally:
-		frappe.set_user(original_user)
+	if customer.site_url and customer.site_url.rstrip("/") != parent_origin.rstrip("/"):
+		context.error = _("Site URL does not match the registered customer.")
+		return context
 
 	# Remember where to forward the Wealthreader callback for this operation.
 	frappe.cache.set_value(
